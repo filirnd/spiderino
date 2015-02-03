@@ -5,20 +5,29 @@ sudo chmod -R 777 /var/www
 
 nel regex dei link aggiungere l'https 
 sempre nel regex se il link inizia con lo / allora bisogna appendere l'url all'inizio
+tempo
+ripetizioni con db
+calcolo profondità
+nel db url, indice
 
 
 */
 
 $url_queue = array();
 
-$start_seed =  $_SERVER["argv"][1]; /* initial url seed */
+$argv = $_SERVER["argv"];
+$argc = count($argv);
 
-$delay = 1; /* default call delay second */
+$start_seed =  $argv[1]; /* initial url seed */
+$key = $argv[2];
 
+$delay = 0; /* default call delay second */
+
+/*
 if(isset($_SERVER["argv"][2])) {
-    $delay = $_SERVER["argv"][2]; /* set delay with start arg  */
+    $delay = $_SERVER["argv"][2]; /* set delay with start arg  
 
-}
+}*/
 
 if (!is_dir('output')) {
     mkdir('output', 0777, true);
@@ -43,15 +52,11 @@ while($index < count($url_queue)-1) {
 
 }
 
-
-
-
-
 /* function that keep urls in &$queue from a page $siteUrl*/
 
 function readUrls($siteUrl,&$queue){
 	
-	global $nURL;
+	global $nURL, $key, $argc, $argv;
 	$siteUrl = clean_url($siteUrl);
 	if(check_file_ext($siteUrl) == 0)
 		return 0;
@@ -61,28 +66,44 @@ function readUrls($siteUrl,&$queue){
     /*check if page is not empty*/
     if( $result )
     {
-        $myfile = fopen("output/".$nURL.".txt", "a") or die("Unable to open file!");        	
-		fwrite($myfile, $result);
-		fclose($myfile);
-		$nURL++;
         echo "Start Parsing url: ".$siteUrl."\n";
         //echo "QUIII! \n";
         
         //echo "\n*** ".check_file_ext($siteUrl)."\n";
 
         /* check if there is url in siteUrl */
-        preg_match_all( '/<a.+?href="(http:\/\/[^0-9].+?)"/', $result, $urlmatch, PREG_SET_ORDER );
-		
+        preg_match_all( '/<a.+?href="((http:\/\/|https:\/\/|\/)[a-zA-Z0-9].+?)"/', $result, $urlmatch, PREG_SET_ORDER );
+		$valid = 0;
        
         /* check if searched words are in page*/
-        $isMail=preg_match_all( '/mail/', $result, $words, PREG_SET_ORDER );
+        $found = preg_match_all( '/'.$key.'/i', $result, $words, PREG_SET_ORDER );
     
-        if($isMail > 0){
-        	echo "word mail is in page ".$siteUrl."\n";
-			$myfile = fopen("pagewithword.txt", "a") or die("Unable to open file!");        	
-			$txt = "word mail is in page ".$siteUrl."\n";
-			fwrite($myfile, $txt);
-			fclose($myfile);
+        if($found > 0){
+        	echo "word ".$key. " is in page ".$siteUrl."\n";
+        	if($argc == 3) 
+        		$valid = 1;
+        	for($i = 3; $i < $argc; $i++) {
+        		echo "search word ".$argv[$i]."\n";
+        		$found = preg_match_all( '/'.$argv[$i].'/i', $result, $words, PREG_SET_ORDER );
+        		if($found > 0) {
+        			$valid = 1;
+        			echo "word ".$argv[$i]. " is in page ".$siteUrl."\n";
+        			break;
+        		}
+        	}
+        	
+        	if($valid == 1) {
+
+        		$myfile = fopen("output/".$nURL.".txt", "w") or die("Unable to open file!");        	
+				fwrite($myfile, $result);
+				fclose($myfile);
+				$nURL++;
+
+				$myfile = fopen("pagewithword.txt", "a") or die("Unable to open file!");        	
+				$txt = "word mail is in page ".$siteUrl."\n";
+				fwrite($myfile, $txt);
+				fclose($myfile);
+			}
         	
         }
         
@@ -125,10 +146,13 @@ function clean_url($url){
 	else if (substr($url, 0, 4) === 'www.')
 		$url = "http://".substr($url, 4);
 
+	else if (substr($url, 0, 8) === 'https://')
+		$url = "http://".substr($url, 8);
+
 	else if (substr($url, 0, 12) === 'https://www.')
 		$url = "http://".substr($url, 12);
 	
-	else if(substr($url, 0, 7) !== 'http://')	
+	else if(substr($url, 0, 7) !== 'http://') 
 		$url = "http://".$url;
 
 	//usare mb_substr?
