@@ -72,7 +72,7 @@ function readUrls($siteUrl,&$queue){
         //echo "\n*** ".check_file_ext($siteUrl)."\n";
 
         /* check if there is url in siteUrl */
-        preg_match_all( '/<a.+?href="((http:\/\/|https:\/\/|\/)[a-zA-Z0-9].+?)"/', $result, $urlmatch, PREG_SET_ORDER );
+        preg_match_all( '/<a.+?href="((http:\/\/|https:\/\/|\/|)[a-zA-Z0-9].+?)"/', $result, $urlmatch, PREG_SET_ORDER );
 		$valid = 0;
        
         /* check if searched words are in page*/
@@ -106,24 +106,42 @@ function readUrls($siteUrl,&$queue){
 			}
         	
         }
-        
-        foreach( $urlmatch as $item )
-        {
 
-            print_r("Found > " .$item[1]. " \n");
-            /*if (!in_array($item[1], $queue)) { 
-					//echo ("item ".$item[1]." not in array.\n");
-					$file_ext="";
-					//check_file_ext($item[1],&$file_ext);
-					//check if url is a webpage (or txt). If is zip for example crawler don't add to queue
-					if(){
-						
-					}
-					
-					
-			}*/
-			array_push($queue,$item[1]);
+        $domain = $siteUrl;
+        $pos = strrpos( substr($siteUrl, 7), '/');
+		if ($pos !== false) {
+		    $domain = substr($siteUrl, 0, 7 + $pos);
+		}
+		echo ">>dominio  ".$domain."\n";
+
+		$firstDomain = substr($siteUrl,7);
+		$pos = strstr($firstDomain, '/', true);
+		if ($pos !== false) {
+		    $firstDomain = "http://".$pos;
+		    echo ">>dominio first  ".$firstDomain."\n";
+		}
+		//$firstDomain = "http://".strstr($firstDomain, '/');
+
+		
+    
+        foreach( $urlmatch as $item ) /*Add founded urls in queue*/
+        {
+        	$tempUrl = $item[1];
+            print_r("Found > " .$tempUrl. " \n");
+
+            //$domain = substr(strrchr($siteUrl, "."), 1);
+            //$domain = substr($siteUrl, 0, strrpos( substr($siteUrl, 0, 7), '/') );
             
+            if (substr($tempUrl, 0, 1) === '/') //quando c'è lo slash vuol dire che devo aggiungere il primo livello senza cartelle
+            	$tempUrl = $firstDomain.$tempUrl;
+            else if(substr($tempUrl, 0, 4) !== 'http')
+            	$tempUrl = $domain."/".$tempUrl;
+            
+			$tempUrl = clean_url($tempUrl);
+			if(check_file_ext($tempUrl) == 1) { 
+				print_r("**Valid > " .$tempUrl. " \n");
+				array_push($queue,$tempUrl);
+            }
         }
 
 	echo "Finish Parsing url: ".$siteUrl."\n";
