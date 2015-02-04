@@ -1,16 +1,36 @@
 <?php
 
-/* 
-sudo chmod -R 777 /var/www
+/* sudo chmod -R 777 /var/www
 
-nel regex dei link aggiungere l'https 
-sempre nel regex se il link inizia con lo / allora bisogna appendere l'url all'inizio
-tempo
-ripetizioni con db
-calcolo profondità
-nel db url, indice
+-nel regex dei link aggiungere l'https (gia fatto?!)
+-sempre nel regex se il link inizia con lo / allora bisogna appendere l'url all'inizio
+-implementare tempo di processamento max
+-ripetizioni con db
+-contare quanti url sono trovati nella pagina.
+-prima di parsare un url provare a inserirlo nel db, se la funz insert() ritorna 0 parsare, altrimenti era gia stato processato.
+-calcolo profondità
+-nel db id (indice del file), url, father(pagina dove è stato trovato url, per costruire il grafo), depth (profondità),
+discoveredurls (numero urls trovati nella pagina)*/
 
 
+
+
+require ("libs/database.php");
+
+/*init database */
+Database::createDb();
+Database::createTable();
+
+/* test insert func*/
+/*
+$fromDb = Database::insert(10,"www.son.com","www.father.com",2,32); 
+if ($fromDb == 0){
+	echo "Url non ripetuto \n";
+	
+
+}else {
+	echo "Url ripetuto non devo parsarlo \n";
+}
 */
 
 $url_queue = array();
@@ -30,7 +50,7 @@ if(isset($_SERVER["argv"][2])) {
 }*/
 
 if (!is_dir('output')) {
-    mkdir('output', 0777, true);
+	mkdir('output', 0777, true);
 }
 
 $nURL = 0;
@@ -61,40 +81,40 @@ function readUrls($siteUrl,&$queue){
 	if(check_file_ext($siteUrl) == 0)
 		return 0;
 	echo "Try getting url: ".$siteUrl."\n";
-    $result = file_get_contents($siteUrl); /* download page */
-   
-    /*check if page is not empty*/
-    if( $result )
-    {
-        echo "Start Parsing url: ".$siteUrl."\n";
+	$result = file_get_contents($siteUrl); /* download page */
+
+	/*check if page is not empty*/
+	if( $result )
+	{
+		echo "Start Parsing url: ".$siteUrl."\n";
         //echo "QUIII! \n";
-        
+
         //echo "\n*** ".check_file_ext($siteUrl)."\n";
 
-        /* check if there is url in siteUrl */
-        preg_match_all( '/<a.+?href="((http:\/\/|https:\/\/|\/|)[a-zA-Z0-9].+?)"/', $result, $urlmatch, PREG_SET_ORDER );
+		/* check if there is url in siteUrl */
+		preg_match_all( '/<a.+?href="((http:\/\/|https:\/\/|\/|)[a-zA-Z0-9].+?)"/', $result, $urlmatch, PREG_SET_ORDER );
 		$valid = 0;
-       
-        /* check if searched words are in page*/
-        $found = preg_match_all( '/'.$key.'/i', $result, $words, PREG_SET_ORDER );
-    
-        if($found > 0){
-        	echo "word ".$key. " is in page ".$siteUrl."\n";
-        	if($argc == 3) 
-        		$valid = 1;
-        	for($i = 3; $i < $argc; $i++) {
-        		echo "search word ".$argv[$i]."\n";
-        		$found = preg_match_all( '/'.$argv[$i].'/i', $result, $words, PREG_SET_ORDER );
-        		if($found > 0) {
-        			$valid = 1;
-        			echo "word ".$argv[$i]. " is in page ".$siteUrl."\n";
-        			break;
-        		}
-        	}
-        	
-        	if($valid == 1) {
 
-        		$myfile = fopen("output/".$nURL.".txt", "w") or die("Unable to open file!");        	
+		/* check if searched words are in page*/
+		$found = preg_match_all( '/'.$key.'/i', $result, $words, PREG_SET_ORDER );
+
+		if($found > 0){
+			echo "word ".$key. " is in page ".$siteUrl."\n";
+			if($argc == 3) 
+				$valid = 1;
+			for($i = 3; $i < $argc; $i++) {
+				echo "search word ".$argv[$i]."\n";
+				$found = preg_match_all( '/'.$argv[$i].'/i', $result, $words, PREG_SET_ORDER );
+				if($found > 0) {
+					$valid = 1;
+					echo "word ".$argv[$i]. " is in page ".$siteUrl."\n";
+					break;
+				}
+			}
+
+			if($valid == 1) {
+
+				$myfile = fopen("output/".$nURL.".txt", "w") or die("Unable to open file!");        	
 				fwrite($myfile, $result);
 				fclose($myfile);
 				$nURL++;
@@ -104,54 +124,54 @@ function readUrls($siteUrl,&$queue){
 				fwrite($myfile, $txt);
 				fclose($myfile);
 			}
-        	
-        }
 
-        $domain = $siteUrl;
-        $pos = strrpos( substr($siteUrl, 7), '/');
+		}
+
+		$domain = $siteUrl;
+		$pos = strrpos( substr($siteUrl, 7), '/');
 		if ($pos !== false) {
-		    $domain = substr($siteUrl, 0, 7 + $pos);
+			$domain = substr($siteUrl, 0, 7 + $pos);
 		}
 		echo ">>dominio  ".$domain."\n";
 
 		$firstDomain = substr($siteUrl,7);
 		$pos = strstr($firstDomain, '/', true);
 		if ($pos !== false) {
-		    $firstDomain = "http://".$pos;
-		    echo ">>dominio first  ".$firstDomain."\n";
+			$firstDomain = "http://".$pos;
+			echo ">>dominio first  ".$firstDomain."\n";
 		}
 		//$firstDomain = "http://".strstr($firstDomain, '/');
 
 		
-    
-        foreach( $urlmatch as $item ) /*Add founded urls in queue*/
-        {
-        	$tempUrl = $item[1];
-            print_r("Found > " .$tempUrl. " \n");
+
+		foreach( $urlmatch as $item ) /*Add founded urls in queue*/
+		{
+			$tempUrl = $item[1];
+			print_r("Found > " .$tempUrl. " \n");
 
             //$domain = substr(strrchr($siteUrl, "."), 1);
             //$domain = substr($siteUrl, 0, strrpos( substr($siteUrl, 0, 7), '/') );
-            
+
             if (substr($tempUrl, 0, 1) === '/') //quando c'è lo slash vuol dire che devo aggiungere il primo livello senza cartelle
-            	$tempUrl = $firstDomain.$tempUrl;
+            $tempUrl = $firstDomain.$tempUrl;
             else if(substr($tempUrl, 0, 4) !== 'http')
             	$tempUrl = $domain."/".$tempUrl;
             
-			$tempUrl = clean_url($tempUrl);
-			if(check_file_ext($tempUrl) == 1) { 
-				print_r("**Valid > " .$tempUrl. " \n");
-				array_push($queue,$tempUrl);
+            $tempUrl = clean_url($tempUrl);
+            if(check_file_ext($tempUrl) == 1) { 
+            	print_r("**Valid > " .$tempUrl. " \n");
+            	array_push($queue,$tempUrl);
             }
         }
 
-	echo "Finish Parsing url: ".$siteUrl."\n";
+        echo "Finish Parsing url: ".$siteUrl."\n";
 
     } else {
     	/*append url that not working in a file*/
-    		$myfile = fopen("notworkingurls.txt", "a") or die("Unable to open file!");        	
-			$txt = "not work ".$siteUrl."\n";
-			fwrite($myfile, $txt);
-			fclose($myfile);
+    	$myfile = fopen("notworkingurls.txt", "a") or die("Unable to open file!");        	
+    	$txt = "not work ".$siteUrl."\n";
+    	fwrite($myfile, $txt);
+    	fclose($myfile);
     	
     	
     }
@@ -190,15 +210,15 @@ function check_file_ext($url){
 	$urlMinusExt = implode(".",$url_arr);
 	return $fileExt;*/
 	if (strpos(substr($url, 7),'/') === false) { /*check if is domain homepage*/
-    	return 1;
+		return 1;
 	}
 
 	$ext = substr(strrchr($url, "."), 1);
 	if(($ext === "html") || ($ext === "htm") || ($ext === "xhtml") || ($ext === "xml") || ($ext === "php")
-	    || ($ext === "txt") || ($ext === "asp") || ($ext === "aspx") || ($ext === "jsp") || ($ext === "jspx"))
-			return 1;
+		|| ($ext === "txt") || ($ext === "asp") || ($ext === "aspx") || ($ext === "jsp") || ($ext === "jspx"))
+		return 1;
 	if (strpos($ext,'/') !== false) {		/*Case of folder*/
-    	return 1;		
+		return 1;		
 	}
 	return 0; 		/*Link not supported*/
 }
