@@ -9,20 +9,20 @@ class Database{
 
 
 	public static function createDb(){ /* create db if not exist */
-		echo "---- Try to create DB ". self::$dbName ."\n";
+		//echo "---- Try to create DB ". self::$dbName ."\n";
 		// Create connection
 		$conn = new mysqli( self::$servername, self::$username, self::$password);
 		// Check connection
 		if ($conn->connect_error) {
-			die("---- CreateDB connection failed: " . $conn->connect_error);
+			die("CreateDB connection failed: " . $conn->connect_error);
 		} 
 
 		// Create database
 		$sql = "CREATE DATABASE ". self::$dbName;
 		if ($conn->query($sql) === TRUE) {
-			echo "---- Database created successfully\n";
+			echo "Database created successfully\n";
 		} else {
-			echo "---- Error creating database: " . $conn->error. "\n";
+			echo "Error creating database: " . $conn->error. "\n";
 		}
 
 		$conn->close();
@@ -30,12 +30,12 @@ class Database{
 
 
 	public static function createTable(){
-		echo "---- Try to create table ". self::$tableName ."\n";
+		//echo "Try to create table ". self::$tableName ."\n";
 		// Create connection
 		$conn = mysqli_connect(self::$servername, self::$username, self::$password, self::$dbName);
 		// Check connection
 		if (!$conn) {
-			die("---- CreateTable connection failed: " . mysqli_connect_error());
+			die("CreateTable connection failed: " . mysqli_connect_error());
 		}
 
 
@@ -43,9 +43,9 @@ class Database{
 		$sql = "CREATE TABLE ".self::$tableName." (id INT(11) UNSIGNED , url VARCHAR(300) NOT NULL PRIMARY KEY, father VARCHAR(300) NOT NULL, depth INT(11) UNSIGNED NOT NULL, discoveredurls INT(11) UNSIGNED NOT NULL)";
 
 		if (mysqli_query($conn, $sql)) {
-			echo "---- Table ".self::$tableName." created successfully \n";
+			echo "Table ".self::$tableName." created successfully \n\n";
 		} else {
-			echo "---- Error creating table: " . mysqli_error($conn)."\n";
+			echo "Error creating table: " . mysqli_error($conn)."\n\n";
 		}
 
 		mysqli_close($conn);
@@ -60,17 +60,17 @@ class Database{
 		$conn = mysqli_connect(self::$servername, self::$username, self::$password, self::$dbName);
 		// Check connection
 		if (!$conn) {
-			die("---- Insert function connection failed: " . mysqli_connect_error()). "\n";
+			die("Insert function connection failed: " . mysqli_connect_error()). "\n";
 		}
 
-		echo $sql = "INSERT INTO ".self::$tableName." (id, url, father, depth, discoveredurls) VALUES ('".$id."', '".$url."', '".$father."', '".$depth."', '".$discoveredurls."')";
+		$sql = "INSERT INTO ".self::$tableName." (id, url, father, depth, discoveredurls) VALUES ('".$id."', '".$url."', '".$father."', '".$depth."', '".$discoveredurls."')";
 
 		if (mysqli_query($conn, $sql)) {
-			echo "---- New record created successfully \n";
+			echo $url." inserted successfully.\n";
 
 		} else {
 			$toReturn = 1;
-			echo "---- Error: " . $sql . "<br>" . mysqli_error($conn) . "\n";
+			//echo "\n---- Error: " . $sql . "\n" . mysqli_error($conn) . "\n";
 		}
 
 		mysqli_close($conn);
@@ -78,6 +78,33 @@ class Database{
 
 
 	}
+
+	/* return 0 if record is correctly update, 1 otherwise */
+	public static function update($id, $url, $discoveredurls){
+		$toReturn = 0;
+		// Create connection
+		$conn = mysqli_connect(self::$servername, self::$username, self::$password, self::$dbName);
+		// Check connection
+		if (!$conn) {
+			die("Update function connection failed: " . mysqli_connect_error()). "\n";
+		}
+
+		$sql = "UPDATE ".self::$tableName." SET id = '".$id."', discoveredurls = '".$discoveredurls."' WHERE url = '".$url."' ";
+
+		if (mysqli_query($conn, $sql)) {
+			echo $url." updated successfully.\n";
+
+		} else {
+			$toReturn = 1;
+			//echo "---- Error: " . $sql . "<br>" . mysqli_error($conn) . "\n";
+		}
+
+		mysqli_close($conn);
+		return $toReturn;
+
+
+	}
+
 }
 
 ?>
