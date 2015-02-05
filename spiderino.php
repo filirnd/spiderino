@@ -2,9 +2,9 @@
 
 /* sudo chmod -R 777 /var/www
 
--implementare tempo di processamento max
 -calcolo profondità
--stampare usage se si passano parametri sbagliati */
+-usare md5 per gli url
+-visitare prima gli url dello stesso sito? */
 
 require ("libs/database.php");
 
@@ -31,10 +31,26 @@ $url_queue = array();
 $argv = $_SERVER["argv"];
 $argc = count($argv);
 
+if( $argc < 5){
+		echo "Error: too few arguments!\nUsage: php ./spiderino SEED1 [SEED2 SEED3 .. ] -t TIME_SIM KEYWORD1 [KEYWORD2 KEYWORD3 .. ]\n";
+ 		return 0;
+	}
+
 $start_seed =  $argv[1]; /* initial url seed */
-$key = $argv[2];
+
+if($argv[2] !== '-t'){
+		echo "Error: wrong arguments!\nUsage: php ./spiderino SEED1 [SEED2 SEED3 .. ] -t TIME_SIM KEYWORD1 [KEYWORD2 KEYWORD3 .. ]\n";
+ 		return 0;
+	}
+	
+$simulationTime = $argv[3] * 60;
+
+$key = $argv[4];
 
 $delay = 0; /* default call delay second */
+
+$timeStart  = strtotime(date("d-m-Y h:i:s"));
+
 
 /*
 if(isset($_SERVER["argv"][2])) {
@@ -68,6 +84,13 @@ $index = 0;
 
 /* Loop readPage while there is element in queue */
 while($index < count($url_queue)) {
+	$timeActual = strtotime(date("d-m-Y h:i:s"));
+	$differenceInSeconds = $timeActual - $timeStart;
+	if($differenceInSeconds > $simulationTime) {
+		echo "Simulation completed! Exiting...\n";
+		break;
+	}
+		
 	//echo ("-----WHILE ENTER WITH INDEX:".$index."\n");
 	readUrls($url_queue[$index],$url_queue);
 	$index++;
@@ -136,7 +159,8 @@ function readUrls($siteUrl, &$queue){
 					//print_r("Valid  " .$tempUrl. " \n");
 	            	array_push($queue,$tempUrl);
 					$nURLFounded++;
-					echo "Dimensione coda ".count($queue). "\n";
+					$mem_usage = getMemoryUsage();
+       				echo "Dimensione coda ".count($queue). " Memoria usata: " .$mem_usage."\n";
 
 				} else {
 					echo "Url ".$tempUrl." ripetuto. \n";
@@ -154,9 +178,9 @@ function readUrls($siteUrl, &$queue){
 
 		if($found > 0){ /*If first keyword founded*/
 			echo "Word ".$key. " is in page ".$siteUrl."\n";
-			if($argc == 3)  /*Case if there is only one keyword*/
+			if($argc == 5)  /*Case if there is only one keyword*/
 				$valid = 1;
-			for($i = 3; $i < $argc; $i++) { /*check if there is almost one another keyword*/
+			for($i = 5; $i < $argc; $i++) { /*check if there is almost one another keyword*/
 				//echo "search word ".$argv[$i]."\n";
 				$found = preg_match_all( '/'.$argv[$i].'/i', $result, $words, PREG_SET_ORDER );
 				if($found > 0) {
@@ -251,6 +275,18 @@ function check_file_ext($url){
 		return 1;		
 	}
 	return 0; 		/*Link not supported*/
+}
+
+function getMemoryUsage() {
+	$mem_usage = memory_get_usage(true);
+       
+    if ($mem_usage < 1024)
+        $mem_usage = $mem_usage." bytes";
+    elseif ($mem_usage < 1048576)
+        $mem_usage = round($mem_usage/1024,2)." KB";
+    else
+        $mem_usage = round($mem_usage/1048576,2)." MB"; 
+	return $mem_usage;
 }
 
 

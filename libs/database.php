@@ -22,7 +22,7 @@ class Database{
 		if ($conn->query($sql) === TRUE) {
 			echo "Database created successfully\n";
 		} else {
-			echo "Error creating database: " . $conn->error. "\n";
+			//echo "Error creating database: " . $conn->error. "\n";
 		}
 
 		$conn->close();
@@ -45,7 +45,7 @@ class Database{
 		if (mysqli_query($conn, $sql)) {
 			echo "Table ".self::$tableName." created successfully \n\n";
 		} else {
-			echo "Error creating table: " . mysqli_error($conn)."\n\n";
+			//echo "Error creating table: " . mysqli_error($conn)."\n\n";
 		}
 
 		mysqli_close($conn);
