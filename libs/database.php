@@ -40,7 +40,7 @@ class Database{
 
 
 		// sql to create table
-		$sql = "CREATE TABLE ".self::$tableName." (id INT(11) UNSIGNED , url VARCHAR(300) NOT NULL PRIMARY KEY, father VARCHAR(300) NOT NULL, depth INT(11) UNSIGNED NOT NULL, discoveredurls INT(11) UNSIGNED NOT NULL)";
+		$sql = "CREATE TABLE ".self::$tableName." (id INT(11) , url VARCHAR(300) NOT NULL PRIMARY KEY, father VARCHAR(300) NOT NULL, depth INT(11)  NOT NULL, discoveredurls INT(11) NOT NULL)";
 
 		if (mysqli_query($conn, $sql)) {
 			echo "Table ".self::$tableName." created successfully \n\n";
@@ -104,6 +104,35 @@ class Database{
 
 
 	}
+
+	/* return 0 if record is correctly insert, 1 otherwise */
+	public static function getDepth($father){
+		$toReturn = 0;
+		// Create connection
+		$conn = mysqli_connect(self::$servername, self::$username, self::$password, self::$dbName);
+		// Check connection
+		if (!$conn) {
+			die("getDepth function connection failed: " . mysqli_connect_error()). "\n";
+		}
+
+		$sql = "SELECT depth FROM ".self::$tableName." WHERE url = '".$father."'";
+
+		if ($result = mysqli_query($conn, $sql)) {
+			$row = mysqli_fetch_assoc($result);
+			$toReturn = $row['depth'];
+			//echo "Profondita di ".$father." uguale a ".$toReturn."\n";
+
+		} else {
+			$toReturn = -2;
+			//echo "\n---- Error: " . $sql . "\n" . mysqli_error($conn) . "\n";
+		}
+
+		mysqli_close($conn);
+		return $toReturn;
+
+
+	}
+
 
 }
 

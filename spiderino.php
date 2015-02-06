@@ -75,7 +75,7 @@ $start_seed = clean_url($start_seed);
 		return 0;
 
 /*Query to insert seed url in DB*/
-$fromDb = Database::insert(NULL, $start_seed, "Initial seed Url", NULL, NULL); 
+$fromDb = Database::insert(-1, $start_seed, "Initial seed Url", 0, -1); 
 
 /*Parse seed url to find new Urls*/
 readUrls($start_seed,$url_queue);
@@ -127,8 +127,8 @@ function readUrls($siteUrl, &$queue){
 		//echo ">> dominio  ".$domain."\n";
 
 		/*Extract main domain url*/
-		$firstDomain = substr($siteUrl,7);
-		$pos = strstr($firstDomain, '/', true);
+		$firstDomain = $siteUrl;
+		$pos = strstr(substr($siteUrl,7), '/', true);
 		if ($pos !== false) {
 			$firstDomain = "http://".$pos;
 			//echo ">> dominio first  ".$firstDomain."\n";
@@ -136,6 +136,8 @@ function readUrls($siteUrl, &$queue){
 		//$firstDomain = "http://".strstr($firstDomain, '/');
 
 		$nURLFounded = 0;
+
+		$depthFather = Database::getDepth($siteUrl);
 
 		foreach( $urlmatch as $item ) /*Add founded urls in queue*/
 		{
@@ -153,8 +155,20 @@ function readUrls($siteUrl, &$queue){
             $tempUrl = clean_url($tempUrl);
             if(check_file_ext($tempUrl) == 1) { 
 
+            	/*Extract domain from tempUrl*/
+            	$domainTempUrl = $tempUrl;
+				$pos = strstr(substr($tempUrl,7), '/', true);
+				if ($pos !== false) {
+					$domainTempUrl = "http://".$pos;
+					//echo ">> dominio first  ".$firstDomain."\n";
+				}
+
+				$depth = $depthFather;
+				if($domainTempUrl != $firstDomain)
+					$depth ++;
+				
 	            /*Query to insert url in DB*/
-	            $fromDb = Database::insert(NULL, $tempUrl, $siteUrl, NULL, NULL); 
+	            $fromDb = Database::insert(-1, $tempUrl, $siteUrl, $depth, -1); 
 				if ($fromDb == 0){
 					//print_r("Valid  " .$tempUrl. " \n");
 	            	array_push($queue,$tempUrl);
