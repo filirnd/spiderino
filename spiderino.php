@@ -10,9 +10,11 @@ require ("libs/database.php");
 
 ini_set('memory_limit', '1024M');
 
+$tableName = str_replace(array(' ', '-', ':'), "_", date("d-m-Y h:i:s"));
+
 /*init database */
 Database::createDb();
-Database::createTable();
+Database::createTable($tableName);
 
 /* test insert func*/
 /*
@@ -26,7 +28,7 @@ if ($fromDb == 0){
 }
 */
 
-$url_queue = array();
+//$url_queue = array();
 
 $argv = $_SERVER["argv"];
 $argc = count($argv);
@@ -58,8 +60,10 @@ if(isset($_SERVER["argv"][2])) {
 
 }*/
 
-if (!is_dir('output')) {
-	mkdir('output', 0777, true);
+$folderName = "output_".$tableName; 
+
+if (!is_dir($folderName)) {
+	mkdir($folderName, 0777, true);
 }
 
 $idURL = 1;
@@ -75,15 +79,16 @@ $start_seed = clean_url($start_seed);
 		return 0;
 
 /*Query to insert seed url in DB*/
-$fromDb = Database::insert(-1, $start_seed, "Initial seed Url", 0, -1); 
+$fromDb = Database::insert($tableName, 0, -1, $start_seed, "Initial seed Url", 0, -1); 
+
+$index = 1;
+$totUrl = 1;
 
 /*Parse seed url to find new Urls*/
-readUrls($start_seed,$url_queue);
-
-$index = 0;
+readUrls($start_seed);
 
 /* Loop readPage while there is element in queue */
-while($index < count($url_queue)) {
+while($index < $totUrl) {
 	$timeActual = strtotime(date("d-m-Y h:i:s"));
 	$differenceInSeconds = $timeActual - $timeStart;
 	if($differenceInSeconds > $simulationTime) {
@@ -91,8 +96,9 @@ while($index < count($url_queue)) {
 		break;
 	}
 		
-	//echo ("-----WHILE ENTER WITH INDEX:".$index."\n");
-	readUrls($url_queue[$index],$url_queue);
+	//echo ("-----------------WHILE ENTER WITH INDEX:".$index."\n");
+	$url = Database::getUrl($tableName, $index);
+	readUrls($url);
 	$index++;
 	//sleep($delay);
 
@@ -100,9 +106,9 @@ while($index < count($url_queue)) {
 
 /* function that keep urls in &$queue from a page $siteUrl*/
 
-function readUrls($siteUrl, &$queue){
+function readUrls($siteUrl){
 	
-	global $idURL, $key, $argc, $argv;
+	global $idURL, $key, $argc, $argv, $totUrl, $tableName, $folderName;
 	//$siteUrl = clean_url($siteUrl);
 	//if(check_file_ext($siteUrl) == 0) /*Check if url is valid*/
 	//	return 0;
@@ -137,7 +143,7 @@ function readUrls($siteUrl, &$queue){
 
 		$nURLFounded = 0;
 
-		$depthFather = Database::getDepth($siteUrl);
+		$depthFather = Database::getDepth($tableName, $siteUrl);
 
 		foreach( $urlmatch as $item ) /*Add founded urls in queue*/
 		{
@@ -168,13 +174,15 @@ function readUrls($siteUrl, &$queue){
 					$depth ++;
 				
 	            /*Query to insert url in DB*/
-	            $fromDb = Database::insert(-1, $tempUrl, $siteUrl, $depth, -1); 
+	            $fromDb = Database::insert($tableName, $totUrl, -1, $tempUrl, $siteUrl, $depth, -1); 
+	            
 				if ($fromDb == 0){
 					//print_r("Valid  " .$tempUrl. " \n");
-	            	array_push($queue,$tempUrl);
+	            	//array_push($queue,$tempUrl);
 					$nURLFounded++;
+					$totUrl++;
 					$mem_usage = getMemoryUsage();
-       				echo "Dimensione coda ".count($queue). " Memoria usata: " .$mem_usage."\n";
+       				echo "Dimensione coda ".$totUrl. " Memoria usata: " .$mem_usage."\n";
 
 				} else {
 					echo "Url ".$tempUrl." ripetuto. \n";
@@ -207,7 +215,7 @@ function readUrls($siteUrl, &$queue){
 			if($valid == 1) { /*If in this page there are keywords*/
 
 				/*Write a file with idURL as name*/
-				$myfile = fopen("output/".$idURL.".txt", "w") or die("Unable to open file!");        	
+				$myfile = fopen($folderName."/".$idURL.".txt", "w") or die("Unable to open file!");        	
 				fwrite($myfile, $result);
 				fclose($myfile);
 				$actualIdFile = $idURL;
@@ -222,14 +230,14 @@ function readUrls($siteUrl, &$queue){
 		}
 
 		
-		if($nURLFounded != 0 || $actualIdFile !=0) {
+		
 			/*Query to update url's info in DB*/
-			$fromDb = Database::update($actualIdFile, $siteUrl, $nURLFounded);
+			$fromDb = Database::update($tableName, $actualIdFile, $siteUrl, $nURLFounded);
 			//if ($fromDb == 0){
 			//	print_r("*** Update > " .$siteUrl. " \n");
 
 			//}
-		}
+		
 		
 		echo "Finish Parsing url: ".$siteUrl."\n\n";
 
