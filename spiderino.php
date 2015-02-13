@@ -2,8 +2,6 @@
 
 /* sudo chmod -R 777 /var/www
 
--calcolo profondità
--usare md5 per gli url
 -visitare prima gli url dello stesso sito? */
 
 require ("libs/database.php");
@@ -16,20 +14,6 @@ $tableName = str_replace(array(' ', '-', ':'), "_", date("d-m-Y h:i:s"));
 Database::createDb();
 Database::createTable($tableName);
 
-/* test insert func*/
-/*
-$fromDb = Database::insert(10,"www.son.com","www.father.com",2,32); 
-if ($fromDb == 0){
-	echo "Url non ripetuto \n";
-	
-
-}else {
-	echo "Url ripetuto non devo parsarlo \n";
-}
-*/
-
-//$url_queue = array();
-
 $argv = $_SERVER["argv"];
 $argc = count($argv);
 
@@ -38,16 +22,31 @@ if( $argc < 5){
  		return 0;
 	}
 
-$start_seed =  $argv[1]; /* initial url seed */
+$i = 1;	
+$totUrl = 0;
 
-if($argv[2] !== '-t'){
+while($argv[$i] != '-t') { //prendo tutti i seed
+	/*Clean seed url*/
+	$start_seed = clean_url($argv[$i]);
+	if(check_file_ext($start_seed) != 0) /*Check if url is valid*/
+	{
+		$fromDb = Database::insert($tableName, $totUrl, -1, $start_seed, "Initial seed Url", 0, -1);  /*Query to insert seed url in DB*/
+		$totUrl++;
+	}	
+	$i++; //go to next url seed
+	
+}
+//$start_seed =  $argv[1]; /* initial url seed */
+
+if($argv[$i] !== '-t'){
 		echo "Error: wrong arguments!\nUsage: php ./spiderino SEED1 [SEED2 SEED3 .. ] -t TIME_SIM KEYWORD1 [KEYWORD2 KEYWORD3 .. ]\n";
  		return 0;
 	}
 	
-$simulationTime = $argv[3] * 60;
+$i++;	
+$simulationTime = $argv[$i] * 60;
 
-$key = $argv[4];
+$firstKey = $i + 1; //indica la prima parola chiave	
 
 $delay = 0; /* default call delay second */
 
@@ -66,26 +65,20 @@ if (!is_dir($folderName)) {
 	mkdir($folderName, 0777, true);
 }
 
-$idURL = 1;
+$idURL = 1; //indice dei files salvati in memoria
 
 /*read first seed url and add it in queue*/
 /*echo "URL SEED ".$start_seed." \n";
 echo "QUEU".count($url_queue)."\n";
 */
 
-/*Clean seed url*/
-$start_seed = clean_url($start_seed);
-	if(check_file_ext($start_seed) == 0) /*Check if url is valid*/
-		return 0;
 
-/*Query to insert seed url in DB*/
-$fromDb = Database::insert($tableName, 0, -1, $start_seed, "Initial seed Url", 0, -1); 
 
-$index = 1;
-$totUrl = 1;
+$index = 0; //used to read from db
+
 
 /*Parse seed url to find new Urls*/
-readUrls($start_seed);
+//readUrls($start_seed);
 
 /* Loop readPage while there is element in queue */
 while($index < $totUrl) {
@@ -108,7 +101,7 @@ while($index < $totUrl) {
 
 function readUrls($siteUrl){
 	
-	global $idURL, $key, $argc, $argv, $totUrl, $tableName, $folderName;
+	global $idURL, $key, $argc, $argv, $totUrl, $tableName, $folderName, $firstKey;
 	//$siteUrl = clean_url($siteUrl);
 	//if(check_file_ext($siteUrl) == 0) /*Check if url is valid*/
 	//	return 0;
@@ -195,22 +188,32 @@ function readUrls($siteUrl){
         $valid = 0;
         $actualIdFile = 0;
 
-		/* check if searched words are in page*/
-		$found = preg_match_all( '/'.$key.'/i', $result, $words, PREG_SET_ORDER );
-
-		if($found > 0){ /*If first keyword founded*/
-			echo "Key: ".$key. " is in page ".$siteUrl."\n";
-			if($argc == 5)  /*Case if there is only one keyword*/
-				$valid = 1;
-			for($i = 5; $i < $argc; $i++) { /*check if there is almost one another keyword*/
-				//echo "search word ".$argv[$i]."\n";
+        
+        for($i = $firstKey; $i < $argc; $i++) { 
 				$found = preg_match_all( '/'.$argv[$i].'/i', $result, $words, PREG_SET_ORDER );
 				if($found > 0) {
 					$valid = 1;
 					echo "Key: ".$argv[$i]. " is in page ".$siteUrl."\n";
 					break;
 				}
-			}
+		}
+
+		/* check if searched words are in page*/
+		//$found = preg_match_all( '/'.$key.'/i', $result, $words, PREG_SET_ORDER );
+
+		//if($found > 0){ /*If first keyword founded*/
+		//	echo "Key: ".$key. " is in page ".$siteUrl."\n";
+		//	if($argc == 5)  /*Case if there is only one keyword*/
+		//		$valid = 1;
+		//	for($i = 5; $i < $argc; $i++) { /*check if there is almost one another keyword*/
+				//echo "search word ".$argv[$i]."\n";
+		//		$found = preg_match_all( '/'.$argv[$i].'/i', $result, $words, PREG_SET_ORDER );
+		//		if($found > 0) {
+		//			$valid = 1;
+		//			echo "Key: ".$argv[$i]. " is in page ".$siteUrl."\n";
+		//			break;
+		//		}
+		//	}
 
 			if($valid == 1) { /*If in this page there are keywords*/
 
@@ -227,7 +230,7 @@ function readUrls($siteUrl){
 				//fclose($myfile);
 			}
 
-		}
+		//}
 
 		
 		
