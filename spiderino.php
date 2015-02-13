@@ -162,19 +162,19 @@ function readUrls($siteUrl){
             if(check_file_ext($tempUrl) == 1) { 
 
             	/*Extract domain from tempUrl*/
-            	$domainTempUrl = $tempUrl;
-				$pos = strstr(substr($tempUrl,7), '/', true);
-				if ($pos !== false) {
-					$domainTempUrl = "http://".$pos;
+            	//$domainTempUrl = $tempUrl;
+				//$pos = strstr(substr($tempUrl,7), '/', true);
+				//if ($pos !== false) {
+				//	$domainTempUrl = "http://".$pos;
 					//echo ">> dominio first  ".$firstDomain."\n";
-				}
+				//}
 
-				$depth = $depthFather;
-				if($domainTempUrl != $firstDomain)
-					$depth ++;
+				//$depth = $depthFather;
+				//if($domainTempUrl != $firstDomain)
+					//$depth ++;
 				
 	            /*Query to insert url in DB*/
-	            $fromDb = Database::insert($tableName, $totUrl, -1, $tempUrl, $siteUrl, $depth, -1); 
+	            $fromDb = Database::insert($tableName, $totUrl, -1, $tempUrl, $siteUrl, $depthFather + 1, -1); 
 	            
 				if ($fromDb == 0){
 					//print_r("Valid  " .$tempUrl. " \n");
@@ -182,10 +182,10 @@ function readUrls($siteUrl){
 					$nURLFounded++;
 					$totUrl++;
 					$mem_usage = getMemoryUsage();
-       				echo "Dimensione coda ".$totUrl. " Memoria usata: " .$mem_usage."\n";
+       				echo "Queue size: ".$totUrl. " Memory used: " .$mem_usage."\n";
 
 				} else {
-					echo "Url ".$tempUrl." ripetuto. \n";
+					echo "Url ".$tempUrl." repeated. \n";
 				}	
 
             	
@@ -199,7 +199,7 @@ function readUrls($siteUrl){
 		$found = preg_match_all( '/'.$key.'/i', $result, $words, PREG_SET_ORDER );
 
 		if($found > 0){ /*If first keyword founded*/
-			echo "Word ".$key. " is in page ".$siteUrl."\n";
+			echo "Key: ".$key. " is in page ".$siteUrl."\n";
 			if($argc == 5)  /*Case if there is only one keyword*/
 				$valid = 1;
 			for($i = 5; $i < $argc; $i++) { /*check if there is almost one another keyword*/
@@ -207,7 +207,7 @@ function readUrls($siteUrl){
 				$found = preg_match_all( '/'.$argv[$i].'/i', $result, $words, PREG_SET_ORDER );
 				if($found > 0) {
 					$valid = 1;
-					echo "Word ".$argv[$i]. " is in page ".$siteUrl."\n";
+					echo "Key: ".$argv[$i]. " is in page ".$siteUrl."\n";
 					break;
 				}
 			}
