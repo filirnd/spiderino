@@ -13,7 +13,7 @@ Writen by
 Full spiderino is released by GPL3 licence.
 */
 
-require ("libs/database.php"); 				/*Require php file for database function*/
+require ("../libs/database.php"); 				/*Require php file for database function*/
 
 ini_set('memory_limit', '1024M'); 			/*Setting max memory used*/
 
